@@ -1,86 +1,160 @@
 version: 2.1
 
-parameters:
-  action:
-    type: enum
-    enum: [build, report]
-    default: build
+# No top-level parameters block is needed for this config; removing for CircleCI best practice.
 
 jobs:
   unit-test:
+  
     docker:
       - image: cimg/python:3.10
     steps:
       - checkout
-      
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: run tests
           command: |
-            . venv/bin/activate
             mkdir test-results
             pytest app --junitxml=test-results/junit.xml
-
       - store_test_results:
           path: test-results
+      - persist_to_workspace:
+          root: .
+          paths:
+            - test-results
 
-  build-push:
-    docker:
-      - image: cimg/python:3.10
-    steps:
-      - checkout
-      - run: ./run-tests.sh
-      - run: ./push-image.sh
+
 
   db-test:
     docker:
-      - image: cimg/python:3.10 # change to image with tag
-        environment:
-          TEST_DATABASE_URL: postgresql://postgres@localhost/circle_test
-
-    # Service container image
-      - image: cimg/postgres:14.0
-        environment:
-          POSTGRES_USER: postgres
-          POSTGRES_DB: postgres
-          POSTGRES_PASS: postgres
+      # - image: cimg/python:3.10 # change to image with tag
+      #  environment:
+      #    TEST_DATABASE_URL: postgresql://postgres@localhost/circle_test
+      
+      # Sidecar container image
+      - image: cimg/base:2026.02
 
     steps:
       - checkout
-      - run: sudo apt-get update
-      - run: sudo apt-get install postgresql-client
-      - run: whoami
-      - run: |
-          psql \
-          -d $TEST_DATABASE_URL \
-          -c "CREATE TABLE test (name char(25));"
-      - run: |
-          psql \
-          -d $TEST_DATABASE_URL \
-          -c "INSERT INTO test VALUES ('John'), ('Joanna'), ('Jennifer');"
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - attach_workspace:
+          at: .
+      - run:
+          name: Start services
+          command: docker-compose up -d
+      - run: 
+          name: Wait for DB
+          command: docker-compose exec -T db pg_isready -U postgres  # wait for ready
+      - run: 
+          name: Install pSQL client
+          command: sudo apt-get update && sudo apt-get install postgresql-client
+      - run: 
+          name: Set Seed Data
+          command: chmod +x ./.circleci/sh/seed-data.sh && ./.circleci/sh/seed-data.sh
 
-  report:
+      - run:
+          name:  Verify Service(s) via Healthcheck Endpoint
+          command: |
+
+            # In this example, we have a "contacts" service, and
+            # we are trying to check, via `dockerize`, if the service is ready.
+            API_CONTAINER=$(docker-compose ps -q api)
+            DB_CONTAINER=$(docker-compose ps -q db)
+            
+            # Test the API health endpoint
+            docker container run --network container:${API_CONTAINER} \
+              docker.io/jwilder/dockerize \
+              -wait http://localhost:8000/health \
+              -wait-retry-interval 2s \
+              -timeout 20s
+      - run:
+          name: Run integration tests 
+          command: |
+            docker-compose exec -T api pytest tests/integration -v --junitxml=test-results/integration.xml
+      - store_test_results:
+          path: test-results
+
+  build:
     docker:
-      - image: cimg/base:2023.11
+      - image: cimg/base:2026.02
     steps:
       - checkout
-      - run: ./create-report.sh
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run: ./.circleci/sh/build-image.sh
+      - run:
+          name: Build Docker image
+          command: |
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            docker image build -t $DOCKERHUB_USERNAME/circleci-new-docker-example:$TAG .
+      - run:
+          name: Save image as tar
+          command: |
+            mkdir -p images
+            docker image save -o "images/practice_${TAG}" "DOCKERHUB_USERNAME/circleci-new-docker-example:${TAG}"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - images
+
+  push:
+    
+    docker:
+      - image: cimg/base:2026.02
+    steps:
+      - attach_workspace:
+                at: .
+      - setup_remote_docker:
+          version: 20.10.18
+      - run:
+          name: Load image
+          command: |
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            docker image load < "images/practice_${TAG}"
+      - run:
+          name: Inspect loaded image
+          command: |
+            # we should see image listed
+            docker image ls
+      - run:
+          name: Push application Docker image
+          command: |
+            TAG=0.1.$CIRCLE_BUILD_NUM
+            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+            docker push $DOCKERHUB_USERNAME/circleci-new-docker-example:$TAG
+
+  cleanup:
+    docker:
+      - image: cimg/base:2026.01
+    steps:
+      - run: ./something
 
 
 workflows:
-  build_and_test:
+  testBuildPush:
+    
     jobs:
       - unit-test
-      - build-push
-
-
-  build:
-    when:
-      equal: [ build, << pipeline.parameters.action >> ]
-    jobs:
-      - build-push
-
-  results:
-    when:
-      equal: [ report, << pipeline.parameters.action >> ]
-    jobs:
-      - report
+      - db-test:
+          requires:
+            - unit-test:
+              - success
+      - build:
+          requires:
+            - db-test:
+              - success
+      - push:
+          requires:
+            - build:
+              - success
+          filters:
+            branches:
+              only:
+                - main
+      - cleanup:
+          requires:
+            - push:
+              - success
+              - failed
+              - canceled
