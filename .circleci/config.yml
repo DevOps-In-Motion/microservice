@@ -43,6 +43,11 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Build images
+          command: |
+            docker-compose build --no-cache api
+            docker-compose build test
+      - run:
           name: Start services
           command: docker-compose up -d
       - run:
