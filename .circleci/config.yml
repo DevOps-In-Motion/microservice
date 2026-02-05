@@ -61,15 +61,17 @@ jobs:
 
             # In this example, we have a "contacts" service, and
             # we are trying to check, via `dockerize`, if the service is ready.
+            sleep 5
             API_CONTAINER=$(docker-compose ps -q api)
-            DB_CONTAINER=$(docker-compose ps -q db)
-            
+            if [ -z "$API_CONTAINER" ]; then
+              echo "Error: API container not found"
+              docker-compose ps
+              exit 1
+            fi
             # Test the API health endpoint
-            docker container run --network container:${API_CONTAINER} \
-              docker.io/jwilder/dockerize \
-              -wait http://localhost:8000/health \
-              -wait-retry-interval 2s \
-              -timeout 20s
+            # Wait for API to be ready
+            sleep 10
+            docker-compose exec -T api curl -f http://localhost:8000/health || exit 1
       - run:
           name: Run integration tests 
           command: |
