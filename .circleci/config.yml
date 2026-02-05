@@ -15,8 +15,9 @@ jobs:
           name: run tests
           command: |
             mkdir -p test-results
-            pip install pytest
-            pytest app --junitxml=test-results/junit.xml
+            pip install -r requirements.txt
+            pytest app/tests/test_mock_integration.py --junitxml=test-results/junit-mock-integration.xml
+            pytest app/tests/test_main.py --junitxml=test-results/junit-mock-integration.xml
       - store_test_results:
           path: test-results
       - persist_to_workspace:
