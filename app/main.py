@@ -30,6 +30,12 @@ async def shutdown():
 
 @app.get("/")
 async def root():
+    """Root endpoint"""
+    return {"status": "healthy", "service": "Task API"}
+
+
+@app.get("/health")
+async def health():
     """Health check endpoint"""
     return {"status": "healthy", "service": "Task API"}
 

@@ -21,8 +21,9 @@ class Database:
             await self.pool.close()
 
     async def create_tables(self):
-        """Create tasks table if it doesn't exist"""
+        """Create tables if they don't exist"""
         async with self.pool.acquire() as conn:
+            # Create tasks table
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
                     id SERIAL PRIMARY KEY,
@@ -30,6 +31,16 @@ class Database:
                     description TEXT,
                     completed BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            # Create test table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS test (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100),
+                    city VARCHAR(100),
+                    state VARCHAR(50),
+                    occupation VARCHAR(100)
                 )
             """)
 
@@ -78,4 +89,52 @@ class Database:
         """Delete a task"""
         async with self.pool.acquire() as conn:
             result = await conn.execute("DELETE FROM tasks WHERE id = $1", task_id)
+            return result.split()[-1] == "1"
+
+    # Test table methods
+    async def get_all_test_records(self) -> List[Dict]:
+        """Retrieve all test records"""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT id, name, city, state, occupation FROM test ORDER BY id")
+            return [dict(row) for row in rows]
+
+    async def get_test_record(self, record_id: int) -> Optional[Dict]:
+        """Retrieve a single test record by ID"""
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, name, city, state, occupation FROM test WHERE id = $1",
+                record_id
+            )
+            return dict(row) if row else None
+
+    async def create_test_record(self, name: str, city: str, state: str, occupation: str) -> int:
+        """Create a new test record"""
+        async with self.pool.acquire() as conn:
+            record_id = await conn.fetchval(
+                """
+                INSERT INTO test (name, city, state, occupation)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id
+                """,
+                name, city, state, occupation
+            )
+            return record_id
+
+    async def update_test_record(self, record_id: int, name: str, city: str, state: str, occupation: str) -> bool:
+        """Update an existing test record"""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE test
+                SET name = $1, city = $2, state = $3, occupation = $4
+                WHERE id = $5
+                """,
+                name, city, state, occupation, record_id
+            )
+            return result.split()[-1] == "1"
+
+    async def delete_test_record(self, record_id: int) -> bool:
+        """Delete a test record"""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("DELETE FROM test WHERE id = $1", record_id)
             return result.split()[-1] == "1"
