@@ -1,14 +1,16 @@
 #!/bin/bash
 set -e
 
-# Configuration
-DATABASE_URL="${TEST_DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/taskdb}"
+# Configuration - use docker-compose service name for database connection
+DB_SERVICE="${DB_SERVICE:-db}"
+DB_NAME="${POSTGRES_DB:-taskdb}"
+DB_USER="${POSTGRES_USER:-postgres}"
 
 echo "Creating test table..."
-psql -d "$DATABASE_URL" -c "CREATE TABLE IF NOT EXISTS test (name char(25));"
+docker-compose exec -T "$DB_SERVICE" psql -U "$DB_USER" -d "$DB_NAME" -c "CREATE TABLE IF NOT EXISTS test (name char(25));"
 
 echo "Inserting fake data..."
-psql -d "$DATABASE_URL" -c "
+docker-compose exec -T "$DB_SERVICE" psql -U "$DB_USER" -d "$DB_NAME" -c "
 INSERT INTO test (name) VALUES 
   ('John'), 
   ('Joanna'), 
@@ -23,6 +25,6 @@ INSERT INTO test (name) VALUES
 "
 
 echo "Verifying data..."
-psql -d "$DATABASE_URL" -c "SELECT COUNT(*) FROM test;"
+docker-compose exec -T "$DB_SERVICE" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT COUNT(*) FROM test;"
 
 echo "Done!"
