@@ -1,0 +1,86 @@
+version: 2.1
+
+parameters:
+  action:
+    type: enum
+    enum: [build, report]
+    default: build
+
+jobs:
+  unit-test:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            mkdir test-results
+            pytest app --junitxml=test-results/junit.xml
+
+      - store_test_results:
+          path: test-results
+
+  build-push:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run: ./run-tests.sh
+      - run: ./push-image.sh
+
+  db-test:
+    docker:
+      - image: cimg/python:3.10 # change to image with tag
+        environment:
+          TEST_DATABASE_URL: postgresql://postgres@localhost/circle_test
+
+    # Service container image
+      - image: cimg/postgres:14.0
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASS: postgres
+
+    steps:
+      - checkout
+      - run: sudo apt-get update
+      - run: sudo apt-get install postgresql-client
+      - run: whoami
+      - run: |
+          psql \
+          -d $TEST_DATABASE_URL \
+          -c "CREATE TABLE test (name char(25));"
+      - run: |
+          psql \
+          -d $TEST_DATABASE_URL \
+          -c "INSERT INTO test VALUES ('John'), ('Joanna'), ('Jennifer');"
+
+  report:
+    docker:
+      - image: cimg/base:2023.11
+    steps:
+      - checkout
+      - run: ./create-report.sh
+
+
+workflows:
+  build_and_test:
+    jobs:
+      - unit-test
+      - build-push
+
+
+  build:
+    when:
+      equal: [ build, << pipeline.parameters.action >> ]
+    jobs:
+      - build-push
+
+  results:
+    when:
+      equal: [ report, << pipeline.parameters.action >> ]
+    jobs:
+      - report
