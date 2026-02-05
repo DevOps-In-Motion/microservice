@@ -13,5 +13,8 @@ COPY app/ .
 # Expose port
 EXPOSE 8000
 
+# Set PYTHONPATH to ensure modules can be found
+ENV PYTHONPATH=/app
+
 # Run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
