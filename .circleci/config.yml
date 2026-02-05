@@ -14,7 +14,8 @@ jobs:
       - run:
           name: run tests
           command: |
-            mkdir test-results
+            mkdir -p test-results
+            pip install pytest
             pytest app --junitxml=test-results/junit.xml
       - store_test_results:
           path: test-results
