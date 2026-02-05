@@ -56,8 +56,15 @@ jobs:
               sleep 2
             done
             # Wait for api to respond
-            until docker-compose exec -T api curl -f http://localhost:8000/health 2>/dev/null; do
-              echo "Waiting for api..."
+            count=0
+            max_tries=3
+            while ! docker-compose exec -T api curl -f http://localhost:8000/health 2>/dev/null; do
+              count=$((count + 1))
+              if [ $count -ge $max_tries ]; then
+                echo "API did not become ready after $max_tries tries. Exiting."
+                exit 1
+              fi
+              echo "Waiting for api... ($count/$max_tries)"
               sleep 2
             done
             echo "Both containers are ready!"
