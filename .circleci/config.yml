@@ -45,6 +45,22 @@ jobs:
       - run:
           name: Start services
           command: docker-compose up -d
+      - run:
+          name: Wait for containers to be ready
+          command: |
+            docker-compose up -d
+            docker-compose ps
+            # Wait for db to be healthy (already has healthcheck)
+            until docker-compose exec -T db pg_isready -U postgres; do
+              echo "Waiting for db..."
+              sleep 2
+            done
+            # Wait for api to respond
+            until docker-compose exec -T api curl -f http://localhost:8000/health 2>/dev/null; do
+              echo "Waiting for api..."
+              sleep 2
+            done
+            echo "Both containers are ready!"
       - run: 
           name: Wait for DB
           command: docker-compose exec -T db pg_isready -U postgres  # wait for ready
