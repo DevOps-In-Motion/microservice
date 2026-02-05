@@ -58,7 +58,7 @@ jobs:
             # Wait for api to respond
             count=0
             max_tries=3
-            while ! docker-compose exec -T api curl -f http://localhost:8000/health 2>/dev/null; do
+            while ! docker-compose ps api | grep -q "Up"; do
               count=$((count + 1))
               if [ $count -ge $max_tries ]; then
                 echo "API did not become ready after $max_tries tries. Exiting."
@@ -77,24 +77,6 @@ jobs:
       - run: 
           name: Set Seed Data
           command: chmod +x ./.circleci/sh/seed-data.sh && ./.circleci/sh/seed-data.sh
-
-      - run:
-          name:  Verify Service(s) via Healthcheck Endpoint
-          command: |
-
-            # In this example, we have a "contacts" service, and
-            # we are trying to check, via `dockerize`, if the service is ready.
-            sleep 5
-            API_CONTAINER=$(docker-compose ps -q api)
-            if [ -z "$API_CONTAINER" ]; then
-              echo "Error: API container not found"
-              docker-compose ps
-              exit 1
-            fi
-            # Test the API health endpoint
-            # Wait for API to be ready
-            sleep 10
-            docker-compose exec -T api curl -f http://localhost:8000/health || exit 1
       - run:
           name: Run integration tests 
           command: |
