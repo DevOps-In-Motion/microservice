@@ -59,19 +59,18 @@ jobs:
             count=0
             max_tries=3
             # Wait until the API container status is "running"
-            while true; do
-              status=$(docker-compose ps -q api | xargs docker inspect --format='{{.State.Status}}')
-              if [ "$status" = "running" ]; then
-                break
-              fi
+            until docker-compose ps api | grep -qE "(Up|Running)"; do
               count=$((count + 1))
               if [ $count -ge $max_tries ]; then
                 echo "API did not become ready after $max_tries tries. Exiting."
+                docker-compose ps api
+                docker-compose logs api --tail=20
                 exit 1
               fi
-              echo "Waiting for api to reach 'running' status... ($count/$max_tries) Current status: $status"
+              echo "Waiting for api... ($count/$max_tries)"
               sleep 2
             done
+            echo "API container is running!"
             echo "Both containers are ready!"
       - run: 
           name: Wait for DB
