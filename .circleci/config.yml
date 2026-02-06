@@ -89,7 +89,7 @@ jobs:
       - run:
           name: Run integration tests 
           command: |
-            docker-compose exec -T api pytest tests/integration -v --junitxml=test-results/integration.xml
+            docker-compose exec -T api pytest /app/tests -v --junitxml=/app/test-results/python_testing.xml
       - store_test_results:
           path: test-results
 
