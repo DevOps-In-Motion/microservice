@@ -87,13 +87,7 @@ jobs:
           name: Set Seed Data
           command: chmod +x ./.circleci/sh/seed-data.sh && ./.circleci/sh/seed-data.sh
       - run:
-          name: Run mock tests 
-          command: |
-            pwd
-            ls -a
-            docker-compose exec -T api pytest /app/tests/test_mock_integration.py -v --junitxml=/app/test-results/python_testing.xml
-      - run:
-          name: Run mock tests 
+          name: Run Integration Tests 
           command: |
             docker-compose run --rm test
       - store_test_results:
