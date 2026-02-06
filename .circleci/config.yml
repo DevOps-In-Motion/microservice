@@ -89,6 +89,9 @@ jobs:
       - run:
           name: Run Integration Tests 
           command: |
+            pwd 
+            ls -a
+            docker-compose exec -T api pytest tests/test_integration.py -v --tb=short
             docker-compose run --rm test
       - store_test_results:
           path: test-results
