@@ -18,6 +18,7 @@ jobs:
           name: run tests
           command: |
             mkdir -p test-results
+            mkdir -p images
             pip install -r requirements.txt
             pytest app/tests/test_mock_integration.py --junitxml=test-results/junit-mock-integration.xml
             pytest app/tests/test_main.py --junitxml=test-results/junit-mock-integration.xml
@@ -27,6 +28,7 @@ jobs:
           root: .
           paths:
             - test-results
+            - images
 
   db-test:
     docker:
