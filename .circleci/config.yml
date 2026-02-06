@@ -113,6 +113,7 @@ jobs:
       - run:
           name: Debug TAG
           command: |
+              echo $TAG > images/tag.txt
               echo "TAG is set to: $TAG"
       - run:
           name: Build Docker image | Save image as tar
