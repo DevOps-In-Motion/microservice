@@ -131,36 +131,42 @@ jobs:
       AWS_REGION: us-west-2
       ROLE_ARN: "arn:aws:iam::588738600522:role/CircleCI-ECRAccess"
     docker:
-      # - image: cimg/base:2026.02
       - image: cimg/aws:2025.01
     steps:
-    - attach_workspace:
-        at: .
-    - setup_remote_docker:
-        docker_layer_caching: true
-    - aws-cli/setup:
-        role_arn: ${ROLE_ARN}
-        region: ${AWS_REGION}
-        role_session_name: "ECR-push-build"
-        session_duration: "1800"
-    - run:
-        name: Log-into-AWS-ECR
-        command: |
-          aws ecr get-login-password --region=us-east-1 | docker login --username AWS --password-stdin 588738600522.dkr.ecr.us-east-1.amazonaws.com
-    - run:
-        name: Load image
-        command: |
-          TAG=circleci_${CIRCLE_BUILD_NUM}
-          docker image load -i "images/${TAG}.tar"
-          docker tag devopsinmotion/circleci:$TAG 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:$TAG
-    - run:
-        name: Inspect loaded image
-        command: docker image ls
-    - run:
-        name: Push application Docker image
-        command: |
-          TAG=circleci_${CIRCLE_BUILD_NUM}
-          docker push 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:${TAG}
+      - attach_workspace:
+          at: .
+      - run:
+          name: Debug - Check workspace contents
+          command: |
+            pwd
+            ls -la
+            ls -la images/ || echo "images directory not found"
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - aws-cli/setup:
+          role_arn: ${ROLE_ARN}
+          region: ${AWS_REGION}
+          role_session_name: "ECR-push-build"
+          session_duration: "1800"
+      - run:
+          name: Log-into-AWS-ECR
+          command: |
+            aws ecr get-login-password --region=us-east-1 | docker login --username AWS --password-stdin 588738600522.dkr.ecr.us-east-1.amazonaws.com
+      - run:
+          name: Load image
+          command: |
+            TAG=circleci_${CIRCLE_BUILD_NUM}
+            docker image load -i "images/${TAG}.tar"
+            docker tag devopsinmotion/circleci:$TAG 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:$TAG
+      - run:
+          name: Inspect loaded image
+          command: docker image ls
+      - run:
+          name: Push application Docker image
+          command: |
+            TAG=circleci_${CIRCLE_BUILD_NUM}
+            docker push 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:${TAG}
+
 
 workflows:
   testBuildPush:
