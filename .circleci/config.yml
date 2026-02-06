@@ -117,10 +117,10 @@ jobs:
       - run:
           name: Build Docker image | Save image as tar
           command: |
-            TAG=${CIRCLE_BUILD_NUM}
-            docker image build -t devopsinmotion/circleci:circleci_$TAG .
+            TAG=circleci_${CIRCLE_BUILD_NUM}
+            docker image build -t devopsinmotion/circleci:$TAG .
             mkdir -p images
-            docker image save -o "images/circleci_${TAG}.tar" "devopsinmotion/circleci:${TAG}"
+            docker image save -o "images/${TAG}.tar" "devopsinmotion/circleci:${TAG}"
       - persist_to_workspace:
           root: .
           paths:
