@@ -169,11 +169,6 @@ jobs:
           command: |
             TAG=0.1.$CIRCLE_BUILD_NUM
             docker push 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:${TAG}
-  cleanup:
-    docker:
-      - image: cimg/base:2026.02
-    steps:
-      - run: ./
 
 
 workflows:
