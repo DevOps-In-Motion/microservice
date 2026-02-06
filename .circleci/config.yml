@@ -192,9 +192,3 @@ workflows:
             branches:
               only:
                 - main
-      - cleanup:
-          requires:
-            - push:
-              - success
-              - failed
-              - canceled
