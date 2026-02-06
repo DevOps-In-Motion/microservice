@@ -38,4 +38,4 @@ services:
       - ./app:/app
       - ./requirements.txt:/app/requirements.txt
     working_dir: /app
-    command: pytest tests/test_integration.py -v --tb=short
+    command: pytest app/tests/test_integration.py -v --tb=short
