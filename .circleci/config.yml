@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  aws-cli: circleci/aws-cli@5.4.1
+
 # No top-level parameters block is needed for this config; removing for CircleCI best practice.
 
 jobs:
@@ -24,8 +27,6 @@ jobs:
           root: .
           paths:
             - test-results
-
-
 
   db-test:
     docker:
@@ -91,8 +92,9 @@ jobs:
           command: |
             pwd 
             ls -a
+            # this works!
             docker-compose exec -T api pytest tests/test_integration.py -v --tb=short
-            docker-compose run --rm test
+            # docker-compose run --rm test
       - store_test_results:
           path: test-results
 
@@ -107,31 +109,50 @@ jobs:
           name: Build Docker image
           command: |
             TAG=0.1.$CIRCLE_BUILD_NUM
-            docker image build -t $DOCKERHUB_USERNAME/circleci-new-docker-example:$TAG .
+            docker image build -t devopsinmotion/circleci:circleci_$TAG .
       - run:
           name: Save image as tar
           command: |
             mkdir -p images
-            docker image save -o "images/practice_${TAG}" "DOCKERHUB_USERNAME/circleci-new-docker-example:${TAG}"
+            docker image save -o "circleci_${TAG}" "devopsinmotion/circleci:${TAG}"
       - persist_to_workspace:
           root: .
           paths:
             - images
 
   push:
-    
+    environment:
+      AWS_REGION: us-west-2
+      ROLE_ARN: "arn:aws:iam::588738600522:role/CircleCI-ECRAccess"
     docker:
-      - image: cimg/base:2026.02
+      # - image: cimg/base:2026.02
+      - image: cimg/aws:2025.01
     steps:
       - attach_workspace:
                 at: .
       - setup_remote_docker:
           version: 20.10.18
+      - aws-cli/setup:
+          role_arn: ${ROLE_ARN}
+          region: ${AWS_REGION}
+          
+          # optional parameters
+          # profile_name: "OIDC-PROFILE"
+          role_session_name: "ECR-push-build"
+          session_duration: "1800"
+      - run:
+          name: Log-into-AWS-ECR
+          command: |
+            # must use same profile specified in the step above
+            aws ecr get-login-password --region=us-east-1
+            aws ecr get-login-password --region=us-east-1 | docker login --username AWS --password-stdin 588738600522.dkr.ecr.us-east-1.amazonaws.com
       - run:
           name: Load image
           command: |
             TAG=0.1.$CIRCLE_BUILD_NUM
-            docker image load < "images/practice_${TAG}"
+            # repo name: 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci
+            docker image load < "devopsinmotion/circleci:circleci_${TAG}"
+            docker tag devopsinmotion/circleci:$TAG 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:$TAG
       - run:
           name: Inspect loaded image
           command: |
@@ -141,19 +162,17 @@ jobs:
           name: Push application Docker image
           command: |
             TAG=0.1.$CIRCLE_BUILD_NUM
-            echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
-            docker push $DOCKERHUB_USERNAME/circleci-new-docker-example:$TAG
-
+            docker push 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:${TAG}
   cleanup:
     docker:
-      - image: cimg/base:2026.01
+      - image: cimg/base:2026.02
     steps:
-      - run: ./something
+      - run: ./
 
 
 workflows:
   testBuildPush:
-    
+    when: pipeline.git.branch == "main" or pipeline.git.branch == "staging"
     jobs:
       - unit-test
       - db-test:
