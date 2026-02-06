@@ -114,7 +114,7 @@ jobs:
           name: Save image as tar
           command: |
             mkdir -p images
-            docker image save -o "circleci_${TAG}" "devopsinmotion/circleci:${TAG}"
+            docker image save -o "images/circleci_${TAG}.tar" "devopsinmotion/circleci:${TAG}"
       - persist_to_workspace:
           root: .
           paths:
