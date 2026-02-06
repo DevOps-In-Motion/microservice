@@ -101,18 +101,16 @@ jobs:
   build:
     docker:
       - image: cimg/base:2026.02
+    environment:
+      TAG: 0.1.$CIRCLE_BUILD_NUM
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
-          name: Build Docker image
+          name: Build Docker image | Save image as tar
           command: |
-            TAG=0.1.$CIRCLE_BUILD_NUM
             docker image build -t devopsinmotion/circleci:circleci_$TAG .
-      - run:
-          name: Save image as tar
-          command: |
             mkdir -p images
             docker image save -o "images/circleci_${TAG}.tar" "devopsinmotion/circleci:${TAG}"
       - persist_to_workspace:
