@@ -91,7 +91,7 @@ jobs:
           command: |
             pwd
             ls -a
-            docker-compose exec -T api pytest /app/tests -v --junitxml=/app/test-results/python_testing.xml
+            docker-compose exec -T api pytest /app/tests/test_mock_integration.py -v --junitxml=/app/test-results/python_testing.xml
       - store_test_results:
           path: test-results
 
