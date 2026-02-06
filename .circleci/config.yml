@@ -102,14 +102,22 @@ jobs:
     docker:
       - image: cimg/base:2026.02
     environment:
-      TAG: 0.1.$CIRCLE_BUILD_NUM
     steps:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
       - run:
+          name: Set TAG variable
+          command: |
+              echo "export TAG=0.1.${CIRCLE_BUILD_NUM}" >> $BASH_ENV
+      - run:
+          name: Debug TAG
+          command: |
+              echo "TAG is set to: $TAG"
+      - run:
           name: Build Docker image | Save image as tar
           command: |
+            TAG=${CIRCLE_BUILD_NUM}
             docker image build -t devopsinmotion/circleci:circleci_$TAG .
             mkdir -p images
             docker image save -o "images/circleci_${TAG}.tar" "devopsinmotion/circleci:${TAG}"
