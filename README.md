@@ -2,7 +2,7 @@
 
 A simple REST API built with FastAPI and PostgreSQL for managing tasks.
 
-[https://circleci.com/gh/DevOps-In-Motion/microservice](https://circleci.com/gh/DevOps-In-Motion/microservice){: target="_blank"}
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/DevOps-In-Motion/microservice/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/DevOps-In-Motion/microservice/tree/main)
 
 ## Features
 
