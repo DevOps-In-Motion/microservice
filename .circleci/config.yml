@@ -140,6 +140,11 @@ jobs:
             pwd
             ls -la
             ls -la images/ || echo "images directory not found"
+            cat images/tag.txt
+      - run:
+          name: Load TAG from file
+          command: |
+            echo "export TAG=$(cat images/tag.txt)" >> $BASH_ENV
       - setup_remote_docker:
           docker_layer_caching: true
       - aws-cli/setup:
@@ -154,7 +159,7 @@ jobs:
       - run:
           name: Load image | Inspect | Push 
           command: |
-            echo "export TAG=$(cat images/tag.txt)" >> $BASH_ENV
+            echo $TAG
             docker image load -i "images/${TAG}.tar"
             docker image ls
             docker tag devopsinmotion/circleci:$TAG 588738600522.dkr.ecr.us-east-1.amazonaws.com/devopsinmotion/circleci:$TAG
