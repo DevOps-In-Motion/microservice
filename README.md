@@ -2,6 +2,8 @@
 
 A simple REST API built with FastAPI and PostgreSQL for managing tasks.
 
+[https://circleci.com/gh/DevOps-In-Motion/microservice](https://circleci.com/gh/DevOps-In-Motion/microservice){: target="_blank"}
+
 ## Features
 
 - Create, read, update, and delete tasks

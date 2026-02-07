@@ -20,7 +20,7 @@ jobs:
             mkdir -p test-results
             pip install -r requirements.txt
             pytest app/tests/test_mock_integration.py --junitxml=test-results/junit-mock-integration.xml
-            pytest app/tests/test_main.py --junitxml=test-results/junit-mock-integration.xml
+            pytest app/tests/test_main.py --junitxml=test-results/junit-main-py.xml
       - store_test_results:
           path: test-results
       - persist_to_workspace:
@@ -49,10 +49,7 @@ jobs:
             docker-compose build --no-cache api
             docker-compose build test
       - run:
-          name: Start services
-          command: docker-compose up -d
-      - run:
-          name: Wait for containers to be ready
+          name: Start & Wait for containers to be ready
           command: |
             docker-compose up -d
             docker-compose ps
@@ -168,7 +165,6 @@ jobs:
 
 workflows:
   testBuildPush:
-    when: pipeline.git.branch == "main" or pipeline.git.branch == "staging"
     jobs:
       - unit-test
       - db-test:
