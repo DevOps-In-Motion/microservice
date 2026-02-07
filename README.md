@@ -1,8 +1,10 @@
+Build Status: [![CircleCI](https://dl.circleci.com/status-badge/img/gh/DevOps-In-Motion/microservice/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/DevOps-In-Motion/microservice/tree/main)
+
+
 # FastAPI Task Management API
 
 A simple REST API built with FastAPI and PostgreSQL for managing tasks.
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/DevOps-In-Motion/microservice/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/DevOps-In-Motion/microservice/tree/main)
 
 ## Features
 
@@ -65,22 +67,12 @@ pytest
  
 Create a CircleCI configuration that builds a tested docker image and publishes an artifact. The pipeline must meet the following criteria:
 
-    - exists in a public VCS repo connected to CircleCI
-    uses a custom docker image generated during the pipeline
-    performs testing with results that can be collected by CircleCI
-    includes use of a database such as postgres, mysql, or mongodb
-    make use of a “sidecar” or secondary container for this
-    DB container may be off-the-shelf image
-    performs conditional work during the execution of the pipeline to limit unnecessary work (may be based on PR status, files changes, success or failures of upstream work)
-    includes shell scripting and non-scripting language (either as the application under test, or in config file)
-    publishes an artifact to PaaS, FaaS, or IaaS of your choice
-    only on merge to default branch
-    credentials may no be accessible outside of approved builds
-    ideally makes use of OIDC
+    - uses a custom docker image generated during the pipeline
+    - only on merge to default branch
 
 Once you are satisfied, and have a working (green) build, please submit a brief writeup and submit it to the link below. The writeup should be written as if directed towards a customer looking for a reference pipeline.
 
-    Include link to the VCS Repo, and a passing CCI build link.
+    - Include link to the VCS Repo, and a passing CCI build link.
     Explain the overall architecture
     what it does
     how components are mapped together

@@ -80,7 +80,7 @@ jobs:
           command: docker-compose exec -T db pg_isready -U postgres  # wait for ready
       - run: 
           name: Install pSQL client
-          command: sudo apt-get update && sudo apt-get install postgresql-client
+          command: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: 
           name: Set Seed Data
           command: chmod +x ./.circleci/sh/seed-data.sh && ./.circleci/sh/seed-data.sh
@@ -98,7 +98,6 @@ jobs:
   build:
     docker:
       - image: cimg/base:2026.02
-    environment:
     steps:
       - checkout
       - attach_workspace:
@@ -110,12 +109,37 @@ jobs:
           command: |
               echo "export TAG=circleci_0.1.${CIRCLE_BUILD_NUM}" >> $BASH_ENV
       - run:
-          name: Build Docker image | Save image as tar
+          name: Build Docker image
           command: |
             TAG=circleci_0.1.${CIRCLE_BUILD_NUM}
             mkdir -p images
             echo $TAG > images/tag.txt
             docker image build -t devopsinmotion/circleci:$TAG .
+      - run:
+          name: Smoke Test New Image
+          command: |
+            set -e
+            NET=smoke-net
+            docker network create $NET || true
+            docker run -d --name smoke-db --network $NET -e POSTGRES_PASSWORD=postgres postgres:15-alpine
+            until docker run --rm --network $NET postgres:15-alpine pg_isready -h smoke-db -U postgres; do
+              echo "Waiting for postgres..."; sleep 2;
+            done
+            docker run -d --name smoke-api --network $NET \
+              -e DATABASE_URL=postgresql://postgres:postgres@smoke-db:5432/postgres \
+              devopsinmotion/circleci:$TAG
+            for i in $(seq 1 3); do
+              if docker run --rm --network $NET curlimages/curl:latest curl -sf http://smoke-api:8000/health > /dev/null; then break; fi
+              if [ $i -eq 3 ]; then echo "API did not become ready"; docker logs smoke-api; exit 1; fi
+              echo "Waiting for API... ($i/3)"; sleep 2;
+            done
+            docker run --rm --network $NET curlimages/curl:latest curl -sf http://smoke-api:8000/health
+            docker stop smoke-api smoke-db
+            docker rm smoke-api smoke-db
+            docker network rm $NET
+      - run:
+          name: Save image as tar
+          command: |
             docker image save -o "images/${TAG}.tar" "devopsinmotion/circleci:${TAG}"
       - persist_to_workspace:
           root: .
@@ -165,6 +189,10 @@ jobs:
 
 workflows:
   testBuildPush:
+    filters:
+      branches:
+        only:
+          - main
     jobs:
       - unit-test
       - db-test:
@@ -179,7 +207,4 @@ workflows:
           requires:
             - build:
               - success
-          filters:
-            branches:
-              only:
-                - main
+
