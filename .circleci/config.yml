@@ -205,6 +205,5 @@ workflows:
               - success
       - push:
           requires:
-            - build:
-              - success
+            - build
 
