@@ -189,10 +189,7 @@ jobs:
 
 workflows:
   testBuildPush:
-    filters:
-      branches:
-        only:
-          - main
+
     jobs:
       - unit-test
       - db-test:
