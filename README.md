@@ -61,20 +61,3 @@ pytest
 
 - `DATABASE_URL` - PostgreSQL connection string (default: `postgresql://postgres:postgres@localhost:5432/taskdb`)
 
-
-
-
- 
-Create a CircleCI configuration that builds a tested docker image and publishes an artifact. The pipeline must meet the following criteria:
-
-    - uses a custom docker image generated during the pipeline
-    - only on merge to default branch
-
-Once you are satisfied, and have a working (green) build, please submit a brief writeup and submit it to the link below. The writeup should be written as if directed towards a customer looking for a reference pipeline.
-
-    - Include link to the VCS Repo, and a passing CCI build link.
-    Explain the overall architecture
-    what it does
-    how components are mapped together
-    Explain the unique value and optimizations made leveraging CircleCI features
-    Outline potential future optimizations or trade-offs to consider
